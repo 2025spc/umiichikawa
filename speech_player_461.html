@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Speech Practice – 46 lines (Mobile friendly)</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.6;margin:24px;max-width:980px}
+  h1{font-size:1.2rem;margin:0 0 6px}
+  .hint{color:#555;margin:0 0 12px}
+  .panel{border:1px solid #e5e7eb;border-radius:16px;padding:14px;margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}
+  .small{font-size:.9rem;color:#666}
+  label{font-size:.95rem;color:#333}
+  select,input[type=range]{padding:6px;border-radius:10px;border:1px solid #ddd}
+  button{padding:10px 14px;border-radius:10px;border:1px solid #ddd;background:#fff;cursor:pointer}
+  button:active{transform:scale(0.98)}
+  button:hover{background:#f7f7f7}
+  ol{padding-left:1.2rem}
+  li{margin:10px 0;padding:10px;border:1px solid #eee;border-radius:12px}
+  .line{font-weight:600;margin-bottom:6px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  .playing{background:#fffbe6;border-color:#f5d36a}
+</style>
+</head>
+<body>
+  <h1>Speech Practice – 46 lines</h1>
+  <p class="hint">
+    スマホでは最初に <b>Enable voice</b> を1回押してください。<br>
+    iPhoneは<b>Safari</b>で開き、サイレントをOFFに。
+  </p>
+
+  <div class="panel">
+    <div class="row">
+      <button id="enable">🔊 Enable voice</button>
+      <span class="small">← まずこれをタップ（音声を有効化）</span>
+    </div>
+    <div class="row">
+      <label for="voice">Voice</label>
+      <select id="voice"></select>
+      <span class="small">（iPhoneなら <b>Samantha</b> または <b>Ava</b> を推奨）</span>
+    </div>
+    <div class="row">
+      <label for="rate">Rate</label>
+      <input id="rate" type="range" min="0.85" max="1.25" step="0.01" value="1"/>
+      <span id="rateVal">1.00</span>
+      <label for="pitch" style="margin-left:12px">Pitch</label>
+      <input id="pitch" type="range" min="0.9" max="1.2" step="0.01" value="1.05"/>
+      <span id="pitchVal">1.05</span>
+      <button id="stop" style="margin-left:12px">⏹ Stop</button>
+    </div>
+  </div>
+
+  <div id="list" class="panel">
+    <ol id="lines"></ol>
+  </div>
+
+<script>
+const LINES = [
+"Have you ever felt like giving up?",
+"Or thought that your hard work would never pay off?",
+"I have.",
+"But dance sparked a light in my heart.",
+"Dance has helped me face challenges and has led me to discover things about myself.",
+"When I started dancing, all I cared about was getting the steps right.",
+"\"One and two and three...\"",
+"I followed the same rhythm as everyone else.",
+"At first, I was dancing center stage, but I was suddenly moved to the sidelines.",
+"Every time someone else stood in the center of the stage, I felt my confidence disappear little by little.",
+"I asked myself, “Why was I moved?”",
+"Even though I practiced every day, nothing seemed to change.",
+"I felt stuck and frustrated, wondering if I should give up.",
+"I practiced so much that blisters covered my feet.",
+"One day, I watched a video of myself dancing and was shocked—I wasn’t smiling at all.",
+"My focus on perfect movements had drained the joy from my expression.",
+"I could see how stiff my body was, how my shoulders tensed with every move.",
+"It hit me: I wasn’t really dancing with my heart.",
+"Still, I couldn’t bring myself to quit.",
+"Somewhere deep inside, I felt like dancing could help me find something important—something unique to me.",
+"Then, it finally happened.",
+"At my first performance at a new studio, something shifted when I danced to the music.",
+"I felt as though the music and I had become one.",
+"I thought, \"Wow, this feels like me.\"",
+"From that day, I stopped feeling the pressure to be perfect and started dancing with my own rhythm and heart.",
+"Later, a teacher who had never given me feedback before said, \"Your dancing was amazing today!\"",
+"Those words boosted my confidence and filled me with joy.",
+"I began to notice my teammates doing the same.",
+"Each of them danced in their own style, and although we were all different, the stage felt alive and connected.",
+"And I finally understood the phrase: \"Everyone is different, and that’s okay.\"",
+"And that got me thinking about something I heard in social studies.",
+"I heard that about 70% of young people said that diversity is important for society.",
+"But, nearly half admitted that they don’t know how to connect with others who are different.",
+"I am in the latter part.",
+"Taking the first step is difficult for me, but just like with dance, I have to take one step at a time and learn how to move.",
+"That’s why I will keep dancing.",
+"I will trust in the harmony that comes from differences, without trying to match someone else’s steps.",
+"This isn’t just true for dance—it’s also true for society.",
+"The power of diversity lies in respecting each other’s differences while creating something together.",
+"If we, the younger generation, can hold on to this mindset, we can build a brighter and more accepting future.",
+"\"One and two and three...\"",
+"So, shall we take the first step together?",
+"Will you take that first step to move forward?",
+"Bring your unique rhythm to a world where everyone can shine.",
+"That’s the future I believe in.",
+"And that future begins right here, right now."
+];
+
+const synth = window.speechSynthesis;
+const voiceSelect = document.getElementById('voice');
+const rate = document.getElementById('rate');
+const pitch = document.getElementById('pitch');
+const rateVal = document.getElementById('rateVal');
+const pitchVal = document.getElementById('pitchVal');
+const list = document.getElementById('lines');
+const enableBtn = document.getElementById('enable');
+
+rate.addEventListener('input', ()=> rateVal.textContent = Number(rate.value).toFixed(2));
+pitch.addEventListener('input', ()=> pitchVal.textContent = Number(pitch.value).toFixed(2));
+
+function populateVoices(){
+  const voices = synth.getVoices();
+  voiceSelect.innerHTML = '';
+  // en-US優先
+  const preferred = voices.filter(v => /en[-_]?US/i.test(v.lang));
+  const others = voices.filter(v => !/en[-_]?US/i.test(v.lang));
+  const ordered = [...preferred, ...others];
+  ordered.forEach(v=>{
+    const opt = document.createElement('option');
+    opt.value = v.name;
+    opt.textContent = `${v.name} — ${v.lang}`;
+    voiceSelect.appendChild(opt);
+  });
+  // iOSなら Samantha / Ava を優先選択
+  let idx = ordered.findIndex(v => /Samantha|Ava/i.test(v.name));
+  if(idx < 0) idx = ordered.findIndex(v => /en[-_]?US/i.test(v.lang));
+  if(idx >= 0) voiceSelect.selectedIndex = idx;
+}
+
+function primeAudio(){
+  // モバイルでの初回ジェスチャー依存を満たすためのダミー発話
+  const u = new SpeechSynthesisUtterance(" ");
+  u.volume = 0; // 無音
+  synth.speak(u);
+  setTimeout(()=> populateVoices(), 300);
+}
+
+enableBtn.addEventListener('click', ()=>{
+  synth.cancel();
+  primeAudio();
+});
+
+// onvoiceschanged は iOS だと発火が不安定なので、手動primeも併用
+if(typeof speechSynthesis !== 'undefined'){
+  speechSynthesis.onvoiceschanged = populateVoices;
+}
+
+function makeUtterance(text){
+  const u = new SpeechSynthesisUtterance(text);
+  const selected = [...speechSynthesis.getVoices()].find(v => v.name === voiceSelect.value);
+  if(selected) u.voice = selected;
+  u.rate = parseFloat(rate.value);
+  u.pitch = parseFloat(pitch.value);
+  u.volume = 1.0;
+  return u;
+}
+
+let currentLi = null;
+function highlight(li){
+  if(currentLi) currentLi.classList.remove('playing');
+  currentLi = li;
+  if(currentLi) currentLi.classList.add('playing');
+}
+function clearHighlight(){ if(currentLi){ currentLi.classList.remove('playing'); currentLi=null; } }
+
+function speakOnce(text, li){
+  synth.cancel();
+  highlight(li);
+  const u = makeUtterance(text);
+  u.onend = clearHighlight;
+  synth.speak(u);
+}
+function speakRepeat(text, li){
+  synth.cancel();
+  highlight(li);
+  const first = makeUtterance(text);
+  first.onend = ()=> {
+    setTimeout(()=>{
+      const second = makeUtterance(text);
+      second.onend = clearHighlight;
+      synth.speak(second);
+    }, 2000);
+  };
+  synth.speak(first);
+}
+
+document.getElementById('stop').addEventListener('click', ()=>{ synth.cancel(); clearHighlight(); });
+
+function render(){
+  const container = document.getElementById('lines');
+  container.innerHTML = '';
+  LINES.forEach((t, i)=>{
+    const li = document.createElement('li');
+    const lineP = document.createElement('div');
+    lineP.className = 'line';
+    lineP.textContent = `${String(i+1).padStart(2,'0')}. ${t}`;
+    const ctr = document.createElement('div');
+    ctr.className = 'controls';
+    const b1 = document.createElement('button');
+    b1.textContent = '▶ One-shot';
+    b1.addEventListener('click', ()=> speakOnce(t, li));
+    const b2 = document.createElement('button');
+    b2.textContent = '▶ Repeat (2s)';
+    b2.addEventListener('click', ()=> speakRepeat(t, li));
+    ctr.appendChild(b1); ctr.appendChild(b2);
+    li.appendChild(lineP); li.appendChild(ctr);
+    container.appendChild(li);
+  });
+}
+render();
+</script>
+</body>
+</html>
